@@ -70,9 +70,9 @@ This backend API handles HTTP requests to store and retrieve submission data. It
 
 Contributions are welcome. Please fork the repository, make changes, and submit a pull request. For major changes, please open an issue first to discuss what you would like to change.
 
-## License
+### Working
+![backend](https://github.com/Jainharshit09/submission-backend/assets/114314853/d6915734-6ea5-4841-9a90-28a75f2aff19)
 
-This project is licensed under the [MIT License](LICENSE).
 
 ## Acknowledgments
 
