@@ -1,33 +1,39 @@
 import express, { Request, Response } from 'express';
 import bodyParser from 'body-parser';
-import cors from 'cors';
 import fs from 'fs';
+import path from 'path';
+import { Submission as ImportedSubmission } from './types';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-const dbFilePath = './db.json';
+const port = 8000;
+const dbFilePath = path.resolve(__dirname, 'db.json');
 
-app.use(cors());
+// Middleware
 app.use(bodyParser.json());
 
-// Ping endpoint
+// Load initial submissions from JSON file (if exists)
+let submissions: ImportedSubmission[] = [];
+try {
+    const data = fs.readFileSync(dbFilePath, 'utf8');
+    submissions = JSON.parse(data);
+    console.log('Initial submissions loaded:', submissions); // Add this line
+} catch (err) {
+    console.error('Error loading submissions:', err);
+}
+
+// Routes
 app.get('/ping', (req: Request, res: Response) => {
     res.json({ success: true });
 });
 
-// Submit endpoint
 app.post('/submit', (req: Request, res: Response) => {
     const { name, email, phone, github_link, stopwatch_time } = req.body;
 
-    // Read existing submissions from file
-    let submissions: any[] = [];
-    if (fs.existsSync(dbFilePath)) {
-        const data = fs.readFileSync(dbFilePath, 'utf-8');
-        submissions = JSON.parse(data);
+    if (!name || !email || !phone || !github_link || !stopwatch_time) {
+        return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
-    // Create new submission
-    const newSubmission = {
+    const newSubmission: ImportedSubmission = {
         name,
         email,
         phone,
@@ -35,33 +41,34 @@ app.post('/submit', (req: Request, res: Response) => {
         stopwatch_time
     };
 
-    // Add new submission to submissions array
     submissions.push(newSubmission);
 
-    // Write submissions back to file
-    fs.writeFileSync(dbFilePath, JSON.stringify(submissions, null, 2));
+    console.log('Current submissions:', submissions); // Add this line
 
-    res.json({ success: true, message: 'Submission saved successfully' });
+    // Save submissions to JSON file
+    fs.writeFile(dbFilePath, JSON.stringify(submissions, null, 2), (err) => {
+        if (err) {
+            console.error('Error saving submissions:', err);
+            return res.status(500).json({ success: false, message: 'Error saving submission' });
+        }
+        console.log('Submissions saved successfully.'); // Add this line
+        res.json({ success: true, submission: newSubmission });
+    });
 });
 
-// Read endpoint
-app.get('/read', (req: Request, res: Response) => {
-    const index = Number(req.query.index);
-
-    // Read existing submissions from file
-    let submissions: any[] = [];
-    if (fs.existsSync(dbFilePath)) {
-        const data = fs.readFileSync(dbFilePath, 'utf-8');
-        submissions = JSON.parse(data);
-    }
-
-    // Get submission by index
-    const submission = submissions[index];
-
-    res.json(submission);
+app.get('/readAll', (req: Request, res: Response) => {
+    res.json(submissions);
 });
 
-// Start the server
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+// Start server
+app.listen(port, () => {
+    console.log(`Server is running on http://localhost:${port}`);
 });
+
+export interface Submission {
+    name: string;
+    email: string;
+    phone: string;
+    github_link: string;
+    stopwatch_time: string;
+}
